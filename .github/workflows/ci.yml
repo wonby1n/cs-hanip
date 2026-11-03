@@ -1,0 +1,19 @@
+# PR마다 빌드를 돌린다. 콘텐츠 frontmatter가 스키마(src/content.config.ts)에 안 맞으면 여기서 실패한다.
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx astro check
+      - run: npm run build

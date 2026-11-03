@@ -1,0 +1,26 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+
+const issues = (await getCollection("issues")).sort((a, b) => b.data.no - a.data.no);
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const pad = (n: number) => String(n).padStart(3, "0");
+---
+<Base title="CS 한 입">
+  <section class="hero">
+    <p class="mono">매일 5분 · 읽고, 꺼내고, 다시</p>
+    <h1>외운 답 말고, 설명할 수 있는 답.</h1>
+    <p>실제 사례로 CS를 읽고, 글을 접은 채 내 말로 설명하고, 면접관 꼬리질문까지 받아요. 틀린 건 며칠 뒤 다시 나와요.</p>
+  </section>
+  <ul class="issue-list">
+    {issues.map((i) => (
+      <li>
+        <a href={`${base}/issues/${i.id}/`}>
+          <span class="mono">No.{pad(i.data.no)} · {i.data.category.join(" / ")}</span>
+          <strong>{i.data.title}</strong>
+          <span class="note">{i.data.summary}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Base>

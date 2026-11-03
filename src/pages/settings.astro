@@ -1,0 +1,13 @@
+---
+import Base from "../layouts/Base.astro";
+import AISettingsForm from "../components/AISettingsForm";
+---
+<Base title="AI 연결 · CS 한 입">
+  <section class="hero">
+    <p class="mono">내 키로 연결하기</p>
+    <h1>AI 피드백은 내 API 키로 써요</h1>
+    <p>키는 이 브라우저에만 저장되고, 요청은 브라우저에서 AI 회사로 바로 가요. CS 한 입에는 서버가 없어서 키를 볼 방법 자체가 없어요. 사용량은 내 계정에서 차감돼요.</p>
+    <p class="note">공용 PC에서는 다 쓰고 "키 지우기"를 눌러주세요. 연결하지 않아도 읽기, 시뮬레이터, 스스로 체크, 예시 답안은 다 쓸 수 있어요.</p>
+  </section>
+  <AISettingsForm client:load />
+</Base>

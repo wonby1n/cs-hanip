@@ -1,0 +1,28 @@
+name: 다음 호 주제 제안
+description: 다뤘으면 하는 CS 주제나 실제 면접에서 받은 질문을 알려주세요
+labels: ["주제 제안"]
+body:
+  - type: input
+    id: topic
+    attributes:
+      label: 주제 (질문형이면 좋아요)
+      placeholder: "예) 주소창에 URL을 치면 무슨 일이 일어날까?"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: 분야
+      options: [네트워크, 운영체제, 데이터베이스, 자료구조, 알고리즘, 보안, 동시성, 시스템설계, 웹]
+  - type: input
+    id: seen
+    attributes:
+      label: 실제 면접에 나왔다면 (선택)
+      description: 회사·연도와 공개된 후기 링크. 질문 원문을 그대로 옮기지 말고 요약해주세요. 개인 식별 정보는 적지 마세요.
+      placeholder: "예) ○○회사 2026 하반기, https://..."
+  - type: checkboxes
+    id: write
+    attributes:
+      label: 직접 써볼래요?
+      options:
+        - label: 제가 이 호를 써볼게요

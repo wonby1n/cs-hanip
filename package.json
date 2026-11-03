@@ -1,0 +1,26 @@
+{
+  "name": "cs-hanip",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "매일 5분, 읽고 꺼내고 다시 — 오픈소스 CS 학습 뉴스레터",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/react": "4.4.2",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "astro": "5.18.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.4",
+    "@types/node": "22.10.2",
+    "typescript": "5.7.3"
+  }
+}

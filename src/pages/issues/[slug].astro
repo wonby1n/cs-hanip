@@ -1,0 +1,46 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import RecallFlow from "../../components/RecallFlow";
+import SimHost from "../../components/sims/SimHost";
+
+export async function getStaticPaths() {
+  const issues = await getCollection("issues");
+  return issues.map((issue) => ({ params: { slug: issue.id }, props: { issue } }));
+}
+
+const { issue } = Astro.props;
+const { Content } = await render(issue);
+const d = issue.data;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const editUrl = `https://github.com/wonby1n/cs-hanip/edit/main/content/issues/${issue.id}.md`;
+---
+<Base title={`${d.title} · CS 한 입`} description={d.summary}>
+  <article class="card issue" id="article">
+    <p class="mono">No.{String(d.no).padStart(3, "0")} · {d.category.join(" / ")}</p>
+    <h1>{d.title}</h1>
+    <p class="lead">한 줄 요약: <span class="mark">{d.summary}</span></p>
+    {d.seenIn.length > 0 && (
+      <p class="seen">실제 면접에 나왔어요: {d.seenIn.map((s, i) => (<>{i > 0 && ", "}<a href={s.source}>{s.company} {s.year}</a></>))}</p>
+    )}
+    <div class="prose"><Content /></div>
+    {d.sim && <SimHost client:visible name={d.sim} />}
+    <footer class="meta">
+      <div>
+        <strong>출처</strong>
+        <ul>{d.sources.map((s) => <li><a href={s.url}>{s.title}</a></li>)}</ul>
+      </div>
+      <p class="note">글쓴이 {d.authors.join(", ")}{d.reviewers.length > 0 && ` · 검수 ${d.reviewers.join(", ")}`} · <a href={editUrl}>이 글 고치기</a></p>
+    </footer>
+  </article>
+
+  <RecallFlow
+    client:load
+    slug={issue.id}
+    title={d.title}
+    prompt={d.recall.prompt}
+    keyPoints={d.recall.keyPoints}
+    followups={d.followups}
+    settingsHref={`${base}/settings/`}
+  />
+</Base>

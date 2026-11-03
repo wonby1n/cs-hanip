@@ -1,0 +1,29 @@
+name: 틀린 내용 제보
+description: 설명이 틀렸거나 애매한 부분을 알려주세요
+labels: ["정확성"]
+body:
+  - type: input
+    id: issue-no
+    attributes:
+      label: 몇 호인가요?
+      placeholder: "예) 001 티켓팅"
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: 어떤 부분이 틀렸나요?
+      description: 해당 문장을 짧게 적어주세요
+    validations:
+      required: true
+  - type: textarea
+    id: right
+    attributes:
+      label: 어떻게 고치면 맞나요?
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: 근거 링크
+      description: 공식 문서, RFC, 교재 등. 근거가 있으면 훨씬 빨리 반영돼요.
