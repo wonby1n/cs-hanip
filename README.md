@@ -12,6 +12,28 @@ CS 한 입은 한 호마다 이 흐름으로 공부해요.
 4. **꼬리질문**: 면접관이 이어서 물을 법한 질문에 답해요.
 5. **복습 예약**: 잘했으면 7일, 절반이면 3일, 못했으면 내일 다시 나와요.
 
+## 미리보기
+
+### 읽기: 실제 사례로, 비유부터
+
+<img src="docs/images/issue.png" alt="1호 '티켓팅 10시 정각, 서버는 왜 터질까?' 본문 화면" width="640">
+
+### 만져보기: 터뜨린 다음 해결책 켜보기
+
+| 요청 폭주 | 대기열을 켜면 |
+|---|---|
+| <img src="docs/images/sim-down.png" alt="초당 2,000건 요청으로 서버가 터진 상태의 시뮬레이터" width="380"> | <img src="docs/images/sim-queue.png" alt="대기열을 켜서 서버는 안정되고 사용자가 순번을 기다리는 상태" width="380"> |
+
+### 안 보고 설명하기: AI가 빠진 부분을 짚어줘요
+
+<img src="docs/images/feedback.png" alt="학습자 설명에 대한 AI 피드백 화면. 좋았던 점과 채우면 좋을 점이 나온다" width="640">
+
+<sub>위 피드백은 화면 예시용 응답이에요. 실제 내용은 연결한 AI와 내 답변에 따라 달라져요.</sub>
+
+### 내 키로 연결
+
+<img src="docs/images/settings.png" alt="AI 회사, API 키, 모델 이름을 넣는 설정 화면" width="640">
+
 ## AI 피드백은 내 키로
 
 설명 채점과 꼬리질문은 **각자 자기 API 키를 연결**해서 써요 (Anthropic, OpenAI, Google 지원).
@@ -43,6 +65,7 @@ src/
   pages/                 Astro 페이지
 .github/                 CI, 배포, 이슈·PR 템플릿
 docs/ARCHITECTURE.md     설계 결정과 이유
+docs/images/             README 스크린샷
 ```
 
 ## 기여하기

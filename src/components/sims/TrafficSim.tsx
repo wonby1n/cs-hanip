@@ -32,7 +32,7 @@ export default function TrafficSim() {
         <label className="check"><input id="sim-limit" type="checkbox" checked={limit} onChange={() => setLimit(!limit)} />연타·매크로 제한 (30% 걸러냄)</label>
       </div>
       <div className="stats">
-        <div className="stat"><div className="v">{r.toLocaleString()}</div><div className="l">서버에 닿는 초당 요청</div></div>
+        <div className="stat"><div className="v">{(queue ? Math.min(r, cap) : r).toLocaleString()}</div><div className="l">서버에 닿는 초당 요청</div></div>
         <div className="stat"><div className="v">{backlog.toLocaleString()}</div><div className="l">{queue ? "대기실에 서 있는 사람" : "10초 뒤 밀린 요청"}</div></div>
         <div className="stat"><div className="v">{queue ? `${Math.round(wait)}초` : `${fail}%`}</div><div className="l">{queue ? "10초 뒤 예상 대기" : "시간 초과 비율"}</div></div>
       </div>
