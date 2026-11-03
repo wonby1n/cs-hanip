@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import Base from "../../layouts/Base.astro";
 import RecallFlow from "../../components/RecallFlow";
 import SimHost from "../../components/sims/SimHost";
+import { loadGlossary, termsIn } from "../../lib/glossary.mjs";
 
 export async function getStaticPaths() {
   const issues = await getCollection("issues");
@@ -10,37 +11,157 @@ export async function getStaticPaths() {
 }
 
 const { issue } = Astro.props;
-const { Content } = await render(issue);
+const { Content, headings } = await render(issue);
 const d = issue.data;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const editUrl = `https://github.com/wonby1n/cs-hanip/edit/main/content/issues/${issue.id}.md`;
----
-<Base title={`${d.title} · CS 한 입`} description={d.summary}>
-  <article class="card issue" id="article">
-    <p class="mono">No.{String(d.no).padStart(3, "0")} · {d.category.join(" / ")}</p>
-    <h1>{d.title}</h1>
-    <p class="lead">한 줄 요약: <span class="mark">{d.summary}</span></p>
-    {d.seenIn.length > 0 && (
-      <p class="seen">실제 면접에 나왔어요: {d.seenIn.map((s, i) => (<>{i > 0 && ", "}<a href={s.source}>{s.company} {s.year}</a></>))}</p>
-    )}
-    <div class="prose"><Content /></div>
-    {d.sim && <SimHost client:visible name={d.sim} />}
-    <footer class="meta">
-      <div>
-        <strong>출처</strong>
-        <ul>{d.sources.map((s) => <li><a href={s.url}>{s.title}</a></li>)}</ul>
-      </div>
-      <p class="note">글쓴이 {d.authors.join(", ")}{d.reviewers.length > 0 && ` · 검수 ${d.reviewers.join(", ")}`} · <a href={editUrl}>이 글 고치기</a></p>
-    </footer>
-  </article>
+const glossary = loadGlossary();
+const terms = termsIn(issue.body ?? "").map((id) => glossary.get(id)).filter((t) => t !== undefined);
 
-  <RecallFlow
-    client:load
-    slug={issue.id}
-    title={d.title}
-    prompt={d.recall.prompt}
-    keyPoints={d.recall.keyPoints}
-    followups={d.followups}
-    settingsHref={`${base}/settings/`}
-  />
+// 읽는 시간: 한국어 기준 분당 약 600자로 잡는다. 코드 블록은 빼고 센다.
+const textOnly = (issue.body ?? "").replace(/```[\s\S]*?```/g, "").replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, "$1");
+const minutes = Math.max(1, Math.round(textOnly.replace(/\s/g, "").length / 600));
+
+// 목차: 본문 h2/h3 + 본문 뒤에 붙는 블록들
+type TocItem = { id: string; text: string; depth: number };
+const toc: TocItem[] = [
+  ...headings.filter((h) => h.depth === 2 || h.depth === 3).map((h) => ({ id: h.slug, text: h.text, depth: h.depth })),
+  ...(d.sim ? [{ id: "sim", text: "직접 만져보기", depth: 2 }] : []),
+  ...(terms.length ? [{ id: "terms", text: "이 글의 용어", depth: 2 }] : []),
+  { id: "practice", text: "안 보고 설명하기", depth: 2 },
+];
+let n = 0;
+const numbered = toc.map((t) => ({ ...t, num: t.depth === 2 ? ++n : null }));
+---
+<Base title={`${d.title} · CS 한 입`} description={d.summary} wide>
+  <div class="read-progress" aria-hidden="true"><i id="read-progress"></i></div>
+
+  <div class="issue-layout">
+    <aside class="toc-side" aria-label="목차">
+      <p class="mono">목차</p>
+      <nav data-toc>
+        <ol>
+          {numbered.map((t) => (
+            <li class={`d${t.depth}`}><a href={`#${t.id}`}>{t.num && <span class="toc-num">{String(t.num).padStart(2, "0")}</span>}{t.text}</a></li>
+          ))}
+        </ol>
+      </nav>
+    </aside>
+
+    <div class="issue-main">
+      <article class="card issue" id="article">
+        <header class="issue-head">
+          <p class="mono">No.{String(d.no).padStart(3, "0")} · {d.category.join(" / ")}</p>
+          <h1>{d.title}</h1>
+          <p class="issue-meta">약 {minutes}분 · 용어 {terms.length}개 · {new Date(d.date).toLocaleDateString("ko-KR")}</p>
+          <div class="summary-box">
+            <span class="summary-label">한 줄 요약</span>
+            <p>{d.summary}</p>
+          </div>
+          {d.seenIn.length > 0 && (
+            <p class="seen">실제 면접에 나왔어요: {d.seenIn.map((s, i) => (<>{i > 0 && ", "}<a href={s.source}>{s.company} {s.year}</a></>))}</p>
+          )}
+        </header>
+
+        <details class="toc-mobile">
+          <summary>목차 <span class="note">{numbered.filter((t) => t.depth === 2).length}개 섹션</span></summary>
+          <nav data-toc>
+            <ol>
+              {numbered.map((t) => (
+                <li class={`d${t.depth}`}><a href={`#${t.id}`}>{t.num && <span class="toc-num">{String(t.num).padStart(2, "0")}</span>}{t.text}</a></li>
+              ))}
+            </ol>
+          </nav>
+        </details>
+
+        <div class="prose"><Content /></div>
+
+        {d.sim && (
+          <section id="sim" class="block">
+            <h2 class="block-title">직접 만져보기</h2>
+            <SimHost client:visible name={d.sim} />
+          </section>
+        )}
+
+        {terms.length > 0 && (
+          <section id="terms" class="block">
+            <details class="terms">
+              <summary>이 글의 용어 <span class="note">{terms.length}개 · 눌러서 펼치기</span></summary>
+              <dl>
+                {terms.map((t) => (
+                  <div>
+                    <dt><a href={`${base}/glossary/#${encodeURIComponent(t.id)}`}>{t.id}</a>{t.en && t.en !== t.id && <span class="term-en"> {t.en}</span>}</dt>
+                    <dd>{t.def}<div class="tags">{t.tags.map((x) => <span class="tag">{x}</span>)}</div></dd>
+                  </div>
+                ))}
+              </dl>
+              <a class="note" href={`${base}/glossary/`}>전체 용어 사전 보기</a>
+            </details>
+          </section>
+        )}
+
+        <footer class="meta">
+          <div>
+            <strong>출처</strong>
+            <ul>{d.sources.map((s) => <li><a href={s.url}>{s.title}</a></li>)}</ul>
+          </div>
+          <p class="note">글쓴이 {d.authors.join(", ")}{d.reviewers.length > 0 && ` · 검수 ${d.reviewers.join(", ")}`} · <a href={editUrl}>이 글 고치기</a></p>
+        </footer>
+      </article>
+
+      <section id="practice">
+        <RecallFlow
+          client:load
+          slug={issue.id}
+          title={d.title}
+          prompt={d.recall.prompt}
+          keyPoints={d.recall.keyPoints}
+          followups={d.followups}
+          settingsHref={`${base}/settings/`}
+        />
+      </section>
+    </div>
+  </div>
 </Base>
+
+<script>
+  // 지금 읽는 섹션을 목차에 표시하고, 위쪽 진행 바를 채운다.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-toc] a")];
+  const ids = [...new Set(links.map((a) => decodeURIComponent(a.hash.slice(1))))];
+  const bar = document.getElementById("read-progress");
+  const article = document.getElementById("article");
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    let current = ids[0];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null && el.getBoundingClientRect().top < 140) current = id;
+    }
+    for (const a of links) {
+      if (decodeURIComponent(a.hash.slice(1)) === current) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    }
+    if (bar && article) {
+      const r = article.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      const p = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 1;
+      bar.style.transform = `scaleX(${p})`;
+    }
+  }
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  update();
+
+  // 폰 목차는 항목을 누르면 접는다.
+  document.querySelectorAll(".toc-mobile a").forEach((a) =>
+    a.addEventListener("click", () => document.querySelector<HTMLDetailsElement>(".toc-mobile")?.removeAttribute("open")),
+  );
+
+  // "안 보고 설명하기"로 가면 본문이 접히므로, 목차 링크는 본문을 다시 펼친 뒤 이동한다.
+  links.forEach((a) => a.addEventListener("click", () => {
+    if (a.hash !== "#practice" && article?.hidden) article.hidden = false;
+  }));
+</script>

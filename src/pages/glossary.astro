@@ -1,0 +1,120 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import { INDEX_KEYS, TAGS, indexKey, loadGlossary, termsIn } from "../lib/glossary.mjs";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const terms = [...loadGlossary().values()].sort((a, b) => a.id.localeCompare(b.id, "ko"));
+
+// 용어가 나온 글
+const issues = (await getCollection("issues")).sort((a, b) => a.data.no - b.data.no);
+const usedIn = new Map<string, { no: number; title: string; href: string }[]>();
+for (const i of issues) {
+  for (const id of termsIn(i.body ?? "")) {
+    const list = usedIn.get(id) ?? [];
+    list.push({ no: i.data.no, title: i.data.title, href: `${base}/issues/${i.id}/` });
+    usedIn.set(id, list);
+  }
+}
+
+const groups = INDEX_KEYS.map((k) => ({ key: k, items: terms.filter((t) => indexKey(t.id) === k) }));
+const tagCount = Object.fromEntries(TAGS.map((tag) => [tag, terms.filter((t) => t.tags.includes(tag)).length]));
+const pad = (n: number) => String(n).padStart(3, "0");
+---
+<Base title="용어 사전 · CS 한 입" description="CS 한 입에 나오는 기본 용어를 쉬운 말로 모아뒀어요.">
+  <section class="hero">
+    <p class="mono">용어 사전 · {terms.length}개</p>
+    <h1>처음 보는 단어가 있어도 괜찮아요</h1>
+    <p>본문에서 점선 밑줄이 있는 단어는 눌러보면 설명이 떠요. 여기엔 전부 모아뒀어요.</p>
+  </section>
+
+  <section class="card gloss-filter" aria-label="용어 찾기">
+    <div class="filter-row">
+      <span class="filter-label">가나다</span>
+      <div class="chips" role="group" aria-label="첫 글자로 찾기">
+        <button type="button" class="chip" data-initial="" aria-pressed="true">전체</button>
+        {groups.map((g) => (
+          <button type="button" class="chip" data-initial={g.key} aria-pressed="false" disabled={g.items.length === 0}>{g.key}</button>
+        ))}
+      </div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">분야</span>
+      <div class="chips" role="group" aria-label="분야로 찾기">
+        <button type="button" class="chip" data-tag="" aria-pressed="true">전체</button>
+        {TAGS.filter((t) => tagCount[t] > 0).map((t) => (
+          <button type="button" class="chip" data-tag={t} aria-pressed="false">{t} <span class="chip-n">{tagCount[t]}</span></button>
+        ))}
+      </div>
+    </div>
+    <p class="note" id="gloss-count" role="status">{terms.length}개 용어</p>
+  </section>
+
+  <div class="gloss-groups">
+    {groups.filter((g) => g.items.length > 0).map((g) => (
+      <section class="gloss-group" data-group={g.key}>
+        <h2 class="gloss-key">{g.key}</h2>
+        <dl class="gloss-list">
+          {g.items.map((t) => (
+            <div class="gloss-item" id={t.id} data-tags={t.tags.join("|")}>
+              <dt>{t.id}{t.en && t.en !== t.id && <span class="term-en"> {t.en}</span>}</dt>
+              <dd>
+                <p>{t.def}</p>
+                <div class="tags">{t.tags.map((x) => <span class="tag">{x}</span>)}</div>
+                {usedIn.get(t.id) && (
+                  <p class="used-in">나온 글: {usedIn.get(t.id)!.map((u, i) => (<>{i > 0 && ", "}<a href={u.href}>No.{pad(u.no)}</a></>))}</p>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    ))}
+    <p class="note" id="gloss-empty" hidden>조건에 맞는 용어가 없어요. 다른 글자나 분야를 골라보세요.</p>
+  </div>
+
+  <p class="note">빠진 용어나 더 쉬운 설명이 있으면 <a href="https://github.com/wonby1n/cs-hanip/edit/main/content/glossary.yml">용어 사전을 직접 고쳐주세요</a>.</p>
+</Base>
+
+<script>
+  // 첫 글자 + 분야 필터. 둘 다 고르면 둘 다 맞는 것만 보여준다.
+  let initial = "";
+  let tag = "";
+  const items = [...document.querySelectorAll<HTMLElement>(".gloss-item")];
+  const groups = [...document.querySelectorAll<HTMLElement>(".gloss-group")];
+  const count = document.getElementById("gloss-count");
+  const empty = document.getElementById("gloss-empty");
+
+  function apply() {
+    let shown = 0;
+    for (const g of groups) {
+      const groupOk = !initial || g.dataset.group === initial;
+      let inGroup = 0;
+      for (const it of g.querySelectorAll<HTMLElement>(".gloss-item")) {
+        const ok = groupOk && (!tag || (it.dataset.tags ?? "").split("|").includes(tag));
+        it.hidden = !ok;
+        if (ok) inGroup++;
+      }
+      g.hidden = inGroup === 0;
+      shown += inGroup;
+    }
+    if (count) count.textContent = `${shown}개 용어` + (initial || tag ? ` · ${[initial, tag].filter(Boolean).join(" · ")}` : "");
+    if (empty) empty.hidden = shown > 0;
+  }
+
+  function wire(attr: "initial" | "tag", set: (v: string) => void) {
+    const btns = [...document.querySelectorAll<HTMLButtonElement>(`[data-${attr}]`)];
+    btns.forEach((b) => b.addEventListener("click", () => {
+      btns.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      set(b.dataset[attr] ?? "");
+      apply();
+    }));
+  }
+  wire("initial", (v) => { initial = v; });
+  wire("tag", (v) => { tag = v; });
+
+  // 다른 글에서 #용어 로 들어오면 그 용어를 강조
+  const target = decodeURIComponent(location.hash.slice(1));
+  if (target) document.getElementById(target)?.classList.add("flash");
+  void items;
+</script>

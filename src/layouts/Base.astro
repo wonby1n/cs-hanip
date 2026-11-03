@@ -2,9 +2,17 @@
 import "../styles/global.css";
 import ProgressBadge from "../components/ProgressBadge";
 
-interface Props { title: string; description?: string }
-const { title, description = "매일 5분, 읽고 꺼내고 다시. 오픈소스 CS 학습 뉴스레터." } = Astro.props;
+interface Props { title: string; description?: string; wide?: boolean }
+const { title, description = "매일 5분, 읽고 꺼내고 다시. 오픈소스 CS 학습 뉴스레터.", wide = false } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const path = Astro.url.pathname.replace(/\/$/, "");
+
+// 현재 페이지 표시: 글 페이지(/issues/...)는 "지난 호"로 친다
+const nav = [
+  { href: `${base}/`, label: "지난 호", active: path === base || path.startsWith(`${base}/issues`) },
+  { href: `${base}/glossary/`, label: "용어 사전", active: path.startsWith(`${base}/glossary`) },
+  { href: `${base}/settings/`, label: "AI 연결", active: path.startsWith(`${base}/settings`) },
+];
 ---
 <!doctype html>
 <html lang="ko">
@@ -17,13 +25,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" />
   </head>
   <body>
-    <div class="wrap">
+    <div class:list={["wrap", { wide }]}>
       <header class="top">
         <a class="brand" href={`${base}/`}><span>CS 한 입</span></a>
-        <nav class="nav">
-          <a href={`${base}/`}>지난 호</a>
-          <a href={`${base}/settings/`}>AI 연결</a>
-          <a href="https://github.com/wonby1n/cs-hanip">GitHub</a>
+        <nav class="nav" aria-label="사이트">
+          {nav.map((n) => <a href={n.href} aria-current={n.active ? "page" : undefined}>{n.label}</a>)}
+          <a class="nav-ext" href="https://github.com/wonby1n/cs-hanip">GitHub ↗</a>
         </nav>
         <ProgressBadge client:load />
       </header>
